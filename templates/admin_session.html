@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Details - OutfitSnap Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .admin-nav a {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .session-info {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            word-break: break-all;
+        }
+        
+        .images-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .image-card {
+            text-align: center;
+            padding: 15px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .image-card.has-image {
+            border: 2px solid #28a745;
+            background: #f8fff9;
+        }
+        
+        .image-preview {
+            width: 100%;
+            max-width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .image-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .image-path {
+            font-size: 11px;
+            color: #666;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        
+        .karl-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .karl-analysis {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .no-analysis {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-partial {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .images-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div>
+                <h1>🔍 Session Details</h1>
+                <p>Outfit-Session vom {{ session.created_at.strftime('%d.%m.%Y um %H:%M') }}</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_dashboard') }}">← Zurück zum Dashboard</a>
+                <form method="post" action="{{ url_for('admin_delete_session', session_id=session.id) }}" onsubmit="return confirm('Session wirklich löschen?');" style="display:inline-block;margin-left:10px;">
+                    <button type="submit" class="btn-small" style="background:#dc3545;color:white;">🗑️ Löschen</button>
+                </form>
+                <a href="{{ url_for('logout') }}">🚪 Abmelden</a>
+            </div>
+        </div>
+
+        <!-- Session Informationen -->
+        <div class="session-info">
+            <h3>📊 Session-Informationen</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Session ID</div>
+                    <div class="info-value">{{ session.id }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Erstellt am</div>
+                    <div class="info-value">{{ session.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">User Session</div>
+                    <div class="info-value">
+                        {% if session.user_session %}
+                        {{ session.user_session }}
+                        {% else %}
+                        <span style="color: #666;">Nicht verfügbar</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Karl-Analyse</div>
+                    <div class="info-value">
+                        {% if session.karl_analysis %}
+                        <span class="status-badge status-success">✅ Vorhanden</span>
+                        {% else %}
+                        <span class="status-badge status-missing">❌ Nicht verwendet</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bilder-Sektion -->
+        <div class="images-section">
+            <h3>🖼️ Bilder & Generierte Inhalte</h3>
+            <div class="images-grid">
+                <!-- Person Bild -->
+                <div class="image-card {% if session.person_image_path %}has-image{% endif %}">
+                    <div class="image-label">👤 Person</div>
+                    {% if session.person_image_path %}
+                    <img src="{{ session.person_image_path }}" alt="Person" class="image-preview" onerror="this.style.display='none'">
+                    <div class="image-path">{{ session.person_image_path }}</div>
+                    {% else %}
+                    <div style="color: #666; padding: 20px;">Kein Bild hochgeladen</div>
+                    {% endif %}
+                </div>
+
+                <!-- Top Bild -->
+                <div class="image-card {% if session.top_image_path %}has-image{% endif %}">
+                    <div class="image-label">👕 Oberteil</div>
+                    {% if session.top_image_path %}
+                    <img src="{{ session.top_image_path }}" alt="Top" class="image-preview" onerror="this.style.display='none'">
+                    <div class="image-path">{{ session.top_image_path }}</div>
+                    {% else %}
+                    <div style="color: #666; padding: 20px;">Kein Bild hochgeladen</div>
+                    {% endif %}
+                </div>
+
+                <!-- Bottom Bild -->
+                <div class="image-card {% if session.bottom_image_path %}has-image{% endif %}">
+                    <div class="image-label">👖 Unterteil</div>
+                    {% if session.bottom_image_path %}
+                    <img src="{{ session.bottom_image_path }}" alt="Bottom" class="image-preview" onerror="this.style.display='none'">
+                    <div class="image-path">{{ session.bottom_image_path }}</div>
+                    {% else %}
+                    <div style="color: #666; padding: 20px;">Kein Bild hochgeladen</div>
+                    {% endif %}
+                </div>
+
+                <!-- Generiertes Bild -->
+                <div class="image-card {% if session.generated_image_path or session.generated_image_url %}has-image{% endif %}">
+                    <div class="image-label">✨ Generiertes Outfit</div>
+                    {% if session.generated_image_path %}
+                    <!-- Lokale Datei (persistenter Storage) -->
+                    {% set filename = session.generated_image_path.replace('\\', '/').split('/')[-1] %}
+                    {% set local_url = url_for('serve_persistent_file', filename='uploads/generated/' + filename) %}
+                    <img src="{{ local_url }}" alt="Generated" class="image-preview" onerror="{% if session.generated_image_url %}this.src='{{ session.generated_image_url }}';{% endif %} console.log('Fallback zu Remote-URL');">
+                    <div class="image-path">
+                        <strong>Lokal:</strong> {{ session.generated_image_path }}<br>
+                        <strong>URL:</strong> {{ local_url }}<br>
+                        {% if session.generated_image_url %}
+                        <strong>Remote:</strong> {{ session.generated_image_url }}
+                        {% endif %}
+                    </div>
+                    {% elif session.generated_image_url %}
+                    <!-- Remote-URL (Replicate) -->
+                    <img src="{{ session.generated_image_url }}" alt="Generated" class="image-preview" onerror="this.style.display='none'">
+                    <div class="image-path">
+                        <strong>Remote:</strong> {{ session.generated_image_url }}<br>
+                        <small style="color: #e67e22;">⚠️ Nur Remote-URL - lokale Speicherung fehlgeschlagen</small>
+                    </div>
+                    {% else %}
+                    <div style="color: #666; padding: 20px;">
+                        <div>🔄 Noch nicht generiert</div>
+                        <small>Das Bild wird automatisch gespeichert, sobald die Generierung abgeschlossen ist.</small>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Generiertes Video -->
+                <div class="image-card {% if session.generated_video_path or session.generated_video_url %}has-image{% endif %}">
+                    <div class="image-label">🎬 Generiertes Video</div>
+                    {% if session.generated_video_path %}
+                    <!-- Lokale Video-Datei (persistenter Storage) -->
+                    {% set filename = session.generated_video_path.replace('\\', '/').split('/')[-1] %}
+                    {% set local_url = url_for('serve_persistent_file', filename='uploads/videos/' + filename) %}
+                    <video controls playsinline class="image-preview" style="width: 100%; max-width: 150px; height: auto;">
+                        <source src="{{ local_url }}" type="video/mp4">
+                        {% if session.generated_video_url %}
+                        <source src="{{ session.generated_video_url }}" type="video/mp4">
+                        {% endif %}
+                        Ihr Browser unterstützt das Video-Element nicht.
+                    </video>
+                    <div class="image-path">
+                        <strong>Lokal:</strong> {{ session.generated_video_path }}<br>
+                        <strong>URL:</strong> {{ local_url }}<br>
+                        {% if session.generated_video_url %}
+                        <strong>Remote:</strong> {{ session.generated_video_url }}
+                        {% endif %}
+                    </div>
+                    {% elif session.generated_video_url %}
+                    <!-- Remote-URL (Replicate) -->
+                    <video controls playsinline class="image-preview" style="width: 100%; max-width: 150px; height: auto;">
+                        <source src="{{ session.generated_video_url }}" type="video/mp4">
+                        Ihr Browser unterstützt das Video-Element nicht.
+                    </video>
+                    <div class="image-path">
+                        <strong>Remote:</strong> {{ session.generated_video_url }}<br>
+                        <small style="color: #e67e22;">⚠️ Nur Remote-URL - lokale Speicherung fehlgeschlagen</small>
+                    </div>
+                    {% else %}
+                    <div style="color: #666; padding: 20px;">
+                        <div>🎬 Kein Video erstellt</div>
+                        <small>Videos können über die "Video erstellen" Funktion generiert werden.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Produktlinks nachpflegen -->
+        <div class="karl-section">
+            <h3>🛍️ Produktlinks bearbeiten</h3>
+            <form method="post" action="{{ url_for('admin_update_products', session_id=session.id) }}" style="display:grid; gap:12px;">
+                <div>
+                    <label style="display:block; font-size:12px; color:#666; margin-bottom:4px;">Top Produkt-URL (Amazon)</label>
+                    <input type="text" name="top_product_url" value="{{ session.top_product_url or '' }}" placeholder="https://www.amazon.de/..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;" />
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; color:#666; margin-bottom:4px;">Bottom Produkt-URL (Amazon)</label>
+                    <input type="text" name="bottom_product_url" value="{{ session.bottom_product_url or '' }}" placeholder="https://www.amazon.de/..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;" />
+                </div>
+                <div>
+                    <button type="submit" class="btn-small" style="background:#28a745;color:white;">💾 Speichern</button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn-small" style="background:#6c757d;color:white;">Zurück</a>
+                </div>
+            </form>
+        </div>
+        
+        <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
+            <p>{{ version }} | Session-Detailansicht</p>
+        </div>
+    </div>
+</body>
+</html>

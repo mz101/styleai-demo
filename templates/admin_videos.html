@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video-Auswahl Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .video-grid {
+            display: grid;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .video-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .video-item:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .video-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .video-info {
+            flex: 1;
+        }
+        
+        .video-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .video-date {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .video-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-add {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .btn-remove {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .btn-toggle {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .status-active {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .status-inactive {
+            background: #666;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .nav-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav-links a {
+            color: #ffd700;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: rgba(255,215,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,215,0,0.2);
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .message.show {
+            transform: translateX(0);
+        }
+        
+        .message.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        
+        .message.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        @media (max-width: 768px) {
+            .sections {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-links">
+            <a href="/">🏠 Startseite</a>
+            <a href="/admin">📊 Admin Dashboard</a>
+            <a href="/admin/videos">🎬 Video-Auswahl</a>
+        </div>
+        
+        <div class="header">
+            <h1>🎬 Video-Auswahl für Wartesequenz</h1>
+            <p>Wähle Videos aus, die zufällig in der Wartesequenz angezeigt werden sollen</p>
+            <div style="margin-top:12px;">
+                <label style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input id="toggleNewestFirst" type="checkbox" {% if newest_first_flag %}checked{% endif %} />
+                    <span><strong>Immer neueste lokalen Videos zuerst zeigen</strong> (Railway/persistent)</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ available_sessions|length }}</div>
+                <div>Verfügbare Videos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ selected_videos|length }}</div>
+                <div>Ausgewählte Videos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ selected_videos|selectattr('is_active', 'equalto', 'true')|list|length }}</div>
+                <div>Aktive Videos</div>
+            </div>
+        </div>
+        
+        <div class="sections">
+            <div class="section">
+                <h2>📁 Verfügbare Videos</h2>
+                <div class="video-grid">
+                    {% for session in available_sessions %}
+                    <div class="video-item">
+                        <video class="video-preview" muted>
+                            {% if session.generated_video_path %}
+                                {% set video_path = session.generated_video_path %}
+                                {% if video_path.startswith('http://') or video_path.startswith('https://') %}
+                                    <source src="{{ video_path }}" type="video/mp4">
+                                {% else %}
+                                    {% if video_path.startswith('/app/persistent/') %}
+                                        {% set rel_path = video_path.replace('/app/persistent/', '') %}
+                                    {% elif video_path.startswith('\\app\\persistent\\') %}
+                                        {% set rel_path = video_path.replace('\\app\\persistent\\', '').replace('\\', '/') %}
+                                    {% else %}
+                                        {% set rel_path = video_path.split('persistent')[-1].lstrip('/\\').replace('\\', '/') %}
+                                    {% endif %}
+                                    <source src="{{ url_for('serve_persistent_file', filename=rel_path) }}" type="video/mp4">
+                                {% endif %}
+                            {% endif %}
+                        </video>
+                        <div class="video-info">
+                            <div class="video-title">Video {{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                            <div class="video-date">{{ session.created_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</div>
+                        </div>
+                        <div class="video-actions">
+                            {% if session.id|string in selected_session_ids %}
+                                <button class="btn btn-remove" onclick="toggleVideo('{{ session.id }}', 'remove')">
+                                    ➖ Entfernen
+                                </button>
+                            {% else %}
+                                <button class="btn btn-add" onclick="toggleVideo('{{ session.id }}', 'add')">
+                                    ➕ Hinzufügen
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>✅ Ausgewählte Videos</h2>
+                <div class="video-grid">
+                    {% for video in selected_videos %}
+                    <div class="video-item">
+                        <video class="video-preview" muted>
+                            {% if video.video_path %}
+                                {% set video_path = video.video_path %}
+                                {% if video_path.startswith('http://') or video_path.startswith('https://') %}
+                                    <source src="{{ video_path }}" type="video/mp4">
+                                {% else %}
+                                    {% if video_path.startswith('/app/persistent/') %}
+                                        {% set rel_path = video_path.replace('/app/persistent/', '') %}
+                                    {% elif video_path.startswith('\\app\\persistent\\') %}
+                                        {% set rel_path = video_path.replace('\\app\\persistent\\', '').replace('\\', '/') %}
+                                    {% else %}
+                                        {% set rel_path = video_path.split('persistent')[-1].lstrip('/\\').replace('\\', '/') %}
+                                    {% endif %}
+                                    <source src="{{ url_for('serve_persistent_file', filename=rel_path) }}" type="video/mp4">
+                                {% endif %}
+                            {% endif %}
+                        </video>
+                        <div class="video-info">
+                            <div class="video-title">{{ video.title or 'Unbenannt' }}</div>
+                            <div class="video-date">{{ video.created_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</div>
+                            <span class="{{ 'status-active' if video.is_active == 'true' else 'status-inactive' }}">
+                                {{ 'Aktiv' if video.is_active == 'true' else 'Inaktiv' }}
+                            </span>
+                        </div>
+                        <div class="video-actions">
+                            <button class="btn btn-toggle" onclick="toggleActive('{{ video.id }}', '{{ 'false' if video.is_active == 'true' else 'true' }}')">
+                                {{ '⏸️ Deaktivieren' if video.is_active == 'true' else '▶️ Aktivieren' }}
+                            </button>
+                            <button class="btn btn-remove" onclick="toggleVideo('{{ video.outfit_session_id }}', 'remove')">
+                                🗑️ Löschen
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="message" class="message"></div>
+    
+    <script>
+        // Video-Previews starten beim Hover
+        document.querySelectorAll('.video-preview').forEach(video => {
+            video.addEventListener('mouseenter', () => {
+                video.currentTime = 0;
+                video.play().catch(() => {});
+            });
+            video.addEventListener('mouseleave', () => {
+                video.pause();
+            });
+        });
+        
+        // Video zur Auswahl hinzufügen/entfernen
+        async function toggleVideo(sessionId, action) {
+            try {
+                const response = await fetch('/admin/videos/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, action: action })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showMessage(data.error || 'Fehler aufgetreten', 'error');
+                }
+            } catch (error) {
+                showMessage('Netzwerk-Fehler: ' + error.message, 'error');
+            }
+        }
+        
+        // Video aktivieren/deaktivieren
+        async function toggleActive(videoId, isActive) {
+            try {
+                const response = await fetch('/admin/videos/toggle-active', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_id: videoId, is_active: isActive })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showMessage(data.error || 'Fehler aufgetreten', 'error');
+                }
+            } catch (error) {
+                showMessage('Netzwerk-Fehler: ' + error.message, 'error');
+            }
+        }
+        
+        // Nachricht anzeigen
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = `message ${type}`;
+            message.classList.add('show');
+            
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 3000);
+        }
+
+        // Toggle Modus neueste zuerst
+        const toggle = document.getElementById('toggleNewestFirst');
+        if (toggle) {
+            toggle.addEventListener('change', async (e) => {
+                try {
+                    const response = await fetch('/admin/videos/mode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ enabled: e.target.checked ? 'true' : 'false' })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showMessage('Modus gespeichert', 'success');
+                    } else {
+                        showMessage(data.error || 'Fehler beim Speichern', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Netzwerk-Fehler: ' + error.message, 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

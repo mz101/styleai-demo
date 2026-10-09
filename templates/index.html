@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Style AI</title>
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<style>
+@media (max-width: 400px) {
+  .app-header__logo {
+    letter-spacing: 12px !important;
+  }
+}
+
+.app-header{
+  position:fixed; top:0; left:0; right:0; z-index:var(--z-header);
+  display:flex; align-items:center; justify-content:center;
+  height:56px; padding:0 var(--s-4);
+  background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55));
+  backdrop-filter:saturate(120%) blur(12px);
+}
+.app-header__menu,.app-header__avatar{
+  display:flex; align-items:center; justify-content:center;
+}
+.app-header__menu{ position:relative; flex:0 0 auto; }
+.app-header__inner{ max-width:1180px; width:100%; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.app-header__logo{
+  flex:1 1 auto; text-align:center; font-family:var(--ff-serif); color:var(--brand); text-decoration:none; display:block; justify-self:center;
+  user-select:none; font-size:26px; letter-spacing:16px; font-weight:700;
+}
+.app-header__avatar{ flex:0 0 auto; }
+
+.icon-btn{ width:32px; height:32px; border-radius:var(--r-sm); background:transparent; border:0; color:#fff; cursor:pointer; }
+.icon-btn:focus-visible{ outline:2px solid #ffffff66; outline-offset:2px; }
+
+#menuPanel{
+  display:none; position:absolute; top:44px; left:0; z-index:200;
+  background:rgba(0,0,0,0.85); backdrop-filter:saturate(120%) blur(12px);
+  padding:8px 10px; box-shadow:rgba(0,0,0,0.35) 0 8px 30px;
+  max-width:400px; width:250px;
+}
+#menuKeywords{ display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow:auto; }
+
+/* Menüeinträge im Panel */
+.menu-btn{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  -webkit-tap-highlight-color:transparent;
+  width:100%; padding:12px 14px;
+  background-color:#0f172a00 !important; color:#e2e8f0 !important;
+  border:1px solid #0f172a00 !important; border-radius:10px;
+  text-align:left; cursor:pointer; font-size:16px; line-height:1.25; display:block;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.menu-btn:hover{ background:#111827; border-color:#334155; }
+.menu-btn:active{ background:#0b1220; }
+.menu-btn:focus-visible{ outline:2px solid #ffffff66; outline-offset:2px; }
+@media (max-width:480px){
+  .menu-btn{ padding:14px 16px; font-size:17px; }
+}
+
+/* Leiste unter dem Header */
+.filter-bar{ position:fixed; top:56px; left:0; right:0; z-index:180; padding:8px 0; }
+.filter-bar__inner{ max-width:1180px; margin:0 auto; padding:0 12px; }
+#activeFilter{ width:250px; display:none; background:rgba(0,0,0,.35); }
+.menu-chip{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,.85); backdrop-filter:saturate(120%) blur(12px); }
+
+.app-header__avatar-img{
+  width:32px; height:32px; border-radius:var(--r-full); outline:2px solid #ffffff22; display:block;
+  background:linear-gradient(135deg,#303236,#1a1b1d);
+}
+</style>
+<header class="app-header" role="banner">
+  <div class="app-header__inner">
+  <div class="app-header__menu">
+    <button class="icon-btn" aria-label="Menü öffnen" aria-expanded="false">
+      <!-- Burger -->
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <div id="menuPanel" style="display: none; position: absolute; top: 44px; left: 0px; z-index: 200; background: rgba(0, 0, 0, 0.85); backdrop-filter: saturate(120%) blur(12px); padding: 8px 10px; box-shadow: rgba(0, 0, 0, 0.35) 0px 8px 30px; max-width: 400px; width: 250px;">
+      <div id="menuKeywords" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow:auto;"><a style="color:white;text-decoration: none;" href="https://style-ai.app/">Back to Home Feed</a></div>
+    </div>
+  </div>
+  <a href="https://style-ai.app/" class="app-header__logo" aria-label="STYLE AI">STYLE AI</a>
+  <div class="app-header__avatar">
+    <span class="app-header__avatar-img" aria-hidden="true"></span>
+  </div>
+  </div>
+  <div class="filter-bar">
+    <div class="filter-bar__inner">
+      <div id="activeFilter" style="display: none;"></div>
+    </div>
+  </div>
+</header>
+<div class="container">
+
+  <div class="form-container">
+    
+    <div class="progress-indicator">
+      <div class="progress-dot" id="dot1"></div>
+      <div class="progress-line" id="line1"></div>
+      <div class="progress-dot" id="dot2"></div>
+      <div class="progress-line" id="line2"></div>
+      <div class="progress-dot" id="dot3"></div>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" id="outfitForm">
+
+      <!-- ----------- Schritt 1 ----------- -->
+      <div class="form-group" id="step1">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-title">Your Photo</div>
+        </div>
+
+        <div class="upload-section">
+          <div class="file-input-wrapper" data-input="person">
+            <input class="file-input" type="file" name="person" id="person" accept="image/*" required>
+            <div class="upload-content">
+              <span class="upload-icon"><svg data-lucide="user"></svg></span>
+              <div class="upload-text">Select Photo</div>
+              <div class="upload-hint">Tap to upload</div>
+            </div>
+
+            <div class="preview-container">
+              <img class="preview-image" alt="Person Preview">
+              <div class="file-name"></div>
+              <button type="button" class="remove-file" title="Remove image">×</button>
+            </div>
+          </div>
+
+          <p style="text-align:center;" class="or-divider" id="orDivider1">OR</p>
+
+          <button type="button" class="product-gallery-toggle" data-category="persons" title="Select person">
+            <svg data-lucide="users"></svg><span> Choose Avatar</span>
+          </button>
+
+          <div class="product-gallery" data-category="persons">
+            <div class="gallery-header">
+              <div class="gallery-title">Select Person</div>
+              <button type="button" class="gallery-close">×</button>
+            </div>
+
+            <div class="gallery-tabs">
+              <button type="button" class="gallery-tab active" data-type="female" onclick="return false;"><svg data-lucide="user"></svg> Female</button>
+              <!-- <button type="button" class="gallery-tab" data-type="male" onclick="return false;"><svg data-lucide="user"></svg> Male</button> -->
+            </div>
+
+            <div class="product-grid" id="personsGrid">
+              <div class="loading-spinner">
+                <div class="spinner"></div><span>Loading Persons…</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ----------- Step 2 (Top) ----------- -->
+      <div class="form-group" id="step2">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-title">Tops</div>
+        </div>
+
+        <div class="upload-section">
+          <div class="file-input-wrapper" data-input="top">
+            <input class="file-input" type="file" name="top" id="top" accept="image/*" required>
+            <div class="upload-content">
+              <span class="upload-icon"><svg data-lucide="shirt"></svg></span>
+              <div class="upload-text">Select Photo</div>
+              <div class="upload-hint">Tap to upload</div>
+            </div>
+
+            <div class="preview-container">
+              <img class="preview-image" alt="Top Preview">
+              <div class="file-name"></div>
+              <button type="button" class="remove-file">×</button>
+            </div>
+          </div>
+
+          <p style="text-align:center;" class="or-divider" id="orDivider2">OR</p>
+
+          <button type="button" class="product-gallery-toggle" data-category="tops">
+            <svg data-lucide="shopping-bag"></svg><span> Search Tops Online</span>
+          </button>
+
+          <div class="product-gallery" data-category="tops">
+            <div class="gallery-header">
+              <div class="gallery-title">Select Tops</div>
+              <button type="button" class="gallery-close">×</button>
+            </div>
+
+            <div class="gallery-tabs">
+              <button type="button" class="gallery-tab active" data-type="search" onclick="return false;" ><svg data-lucide="search"></svg> Search</button>
+              <button type="button" class="gallery-tab" data-type="t-shirts" onclick="return false;">T-Shirts</button>
+              <button type="button" class="gallery-tab" data-type="shirts" onclick="return false;">Shirts</button>
+              <button type="button" class="gallery-tab" data-type="sweaters" onclick="return false;">Sweaters</button>
+              <button type="button" class="gallery-tab" data-type="jackets" onclick="return false;" >Jackets</button>
+            </div>
+
+            <div class="search-container" style="display:block ">
+              <div style="display:flex;gap:.5rem">
+                <input class="search-input" type="text" placeholder="e.g. 'red blouse', 'vintage jacket'…" style="flex:1">
+                <button type="button" class="search-button">Search</button>
+              </div>
+              <div class="search-hints"><svg data-lucide="lightbulb"></svg><div class="search-hints-text">Tip: Choose images with only one product shown
+            </div> </div></div>
+
+            <div class="product-grid" id="topsGrid">
+              <div class="loading-spinner">
+                <div class="spinner"></div><span>Loading Products…</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ----------- Step 3 (Bottom) ----------- -->
+      <div class="form-group" id="step3">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div class="step-title">Bottoms</div>
+        </div>
+
+        <div class="upload-section">
+          <div class="file-input-wrapper" data-input="bottom">
+            <input class="file-input" type="file" name="bottom" id="bottom" accept="image/*" required>
+            <div class="upload-content">
+              <span class="upload-icon"><svg data-lucide="triangle"></svg></span>
+              <div class="upload-text">Select Photo</div>
+              <div class="upload-hint">or drag file here</div>
+            </div>
+
+            <div class="preview-container">
+              <img class="preview-image" alt="Bottom Preview">
+              <div class="file-name"></div>
+              <button type="button" class="remove-file">×</button>
+            </div>
+          </div>
+
+          <p style="text-align:center;" class="or-divider" id="orDivider3">OR</p>
+
+          <button type="button" class="product-gallery-toggle" data-category="bottoms">
+            <svg data-lucide="shopping-bag"></svg> Search Bottoms Online
+          </button>
+
+          <div class="product-gallery" data-category="bottoms">
+            <div class="gallery-header">
+              <div class="gallery-title">Select Bottoms</div>
+              <button type="button" class="gallery-close">×</button>
+            </div>
+
+            <div class="gallery-tabs">
+              <button type="button" class="gallery-tab active" data-type="search" onclick="return false;"><svg data-lucide="search"></svg> Search</button>
+              <button type="button" class="gallery-tab" data-type="jeans" onclick="return false;">Jeans</button>
+              <button type="button" class="gallery-tab" data-type="trousers" onclick="return false;">Trousers</button>
+              <button type="button" class="gallery-tab" data-type="skirts" onclick="return false;">Skirts</button>
+              <button type="button" class="gallery-tab" data-type="shorts" onclick="return false;">Shorts</button>
+            </div>
+
+            <div class="search-container" style="display:block ">
+              <div style="display:flex;gap:.5rem">
+                <input class="search-input" type="text" placeholder="e.g. 'black trousers', 'mini skirt'…" style="flex:1">
+                <button type="button" class="search-button">Search</button>
+              </div>
+              <div class="search-hints"><svg data-lucide="lightbulb"></svg> Tip: "elegant black trousers" delivers more suitable images</div>
+            </div>
+
+            <div class="product-grid" id="bottomsGrid">
+              <div class="loading-spinner">
+                <div class="spinner"></div><span>Loading Products…</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- Abschicken ---------- -->
+      <button  class="submit-btn" type="submit" id="submitBtn">Create Outfit</button>
+      <a href="#" onclick="location.reload(); return false;" style="color:#535353; margin-top:25px"><br><br><center>Reset selection</center></a>
+
+
+      <!-- ---------- Fortschritts-Balken ---------- -->
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+    </form>
+  </div>
+  
+  <!-- Footer -->
+  <center><div class="version-info" style="display:none">
+    {{ version }} | <a href="{{ url_for('admin_dashboard') }}">Admin</a> | <a href="/logout">Abmelden</a>
+  </div></center>
+</div>
+
+<!-- Modal für Vollbildanzeige -->
+<div class="image-modal" id="imageModal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+    <img class="modal-image" id="modalImage" alt="Fullscreen">
+    <button type="button" class="modal-select-btn" id="modalSelectBtn" title="Select person">
+      <svg data-lucide="check" width="24" height="24"></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+</script>
+
+<script>
+  (function(){
+    const header = document.querySelector('.app-header');
+    if(!header) return;
+    const btn = header.querySelector('.icon-btn');
+    const panel = header.querySelector('#menuPanel');
+    const active = document.getElementById('activeFilter');
+    const isOpen = () => panel && panel.style.display !== 'none';
+    const open = () => { if(panel) panel.style.display = 'block'; if(btn) btn.setAttribute('aria-expanded','true'); };
+    const close = () => { if(panel) panel.style.display = 'none'; if(btn) btn.setAttribute('aria-expanded','false'); };
+
+    btn && btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isOpen() ? close() : open();
+    });
+    document.addEventListener('click', (e) => {
+      if(header && panel && isOpen() && !header.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape') close(); });
+    panel && panel.addEventListener('click', (e) => {
+      const target = e.target.closest('.menu-btn');
+      if(!target) return;
+      const term = target.dataset.term || (target.textContent || '').trim();
+      if(active){ active.textContent = term; active.style.display = 'block'; }
+      close();
+    });
+  })();
+  </script>
+
+<script src="{{ url_for('static', filename='search.js') }}"></script>
+
+
+
+
+</body>
+</html>

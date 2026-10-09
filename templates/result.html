@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Outfit Results</title>
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<style>
+@media (max-width: 400px) {
+  .app-header__logo {
+    letter-spacing: 12px !important;
+  }
+}
+
+.app-header{
+  position:fixed; top:0; left:0; right:0; z-index:var(--z-header);
+  display:flex; align-items:center; justify-content:center;
+  height:56px; padding:0 var(--s-4);
+  background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55));
+  backdrop-filter:saturate(120%) blur(12px);
+}
+.app-header__menu,.app-header__avatar{ display:flex; align-items:center; justify-content:center; }
+.app-header__menu{ position:relative; flex:0 0 auto; }
+.app-header__inner{ max-width:1180px; width:100%; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.app-header__logo{
+  flex:1 1 auto; text-align:center; font-family:var(--ff-serif); color:var(--brand); text-decoration:none; display:block; justify-self:center;
+  user-select:none; font-size:26px; letter-spacing:16px; font-weight:700;
+}
+.app-header__avatar{ flex:0 0 auto; }
+.icon-btn{ width:32px; height:32px; border-radius:var(--r-sm); background:transparent; border:0; color:#fff; cursor:pointer; }
+.icon-btn:focus-visible{ outline:2px solid #ffffff66; outline-offset:2px; }
+#menuPanel{
+  display:none; position:absolute; top:44px; left:0; z-index:200;
+  background:rgba(0,0,0,0.85); backdrop-filter:saturate(120%) blur(12px);
+  padding:8px 10px; box-shadow:rgba(0,0,0,0.35) 0 8px 30px;
+  max-width:400px; width:250px;
+}
+#menuKeywords{ display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow:auto; }
+.menu-btn{ appearance:none; -webkit-appearance:none; -moz-appearance:none; -webkit-tap-highlight-color:transparent; width:100%; padding:12px 14px; background-color:#0f172a00 !important; color:#e2e8f0 !important; border:1px solid #0f172a00 !important; border-radius:10px; text-align:left; cursor:pointer; font-size:16px; line-height:1.25; display:block; transition:background .15s ease, border-color .15s ease, color .15s ease; }
+.menu-btn:hover{ background:#111827; border-color:#334155; }
+.menu-btn:active{ background:#0b1220; }
+.menu-btn:focus-visible{ outline:2px solid #ffffff66; outline-offset:2px; }
+@media (max-width:480px){ .menu-btn{ padding:14px 16px; font-size:17px; } }
+.filter-bar{ position:fixed; top:56px; left:0; right:0; z-index:180; padding:8px 0; }
+.filter-bar__inner{ max-width:1180px; margin:0 auto; padding:0 12px; }
+#activeFilter{ width:250px; display:none; background:rgba(0,0,0,.35); }
+.menu-chip{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,.85); backdrop-filter:saturate(120%) blur(12px); }
+.app-header__avatar-img{ width:32px; height:32px; border-radius:var(--r-full); outline:2px solid #ffffff22; display:block; background:linear-gradient(135deg,#303236,#1a1b1d); }
+</style>
+<header class="app-header" role="banner">
+  <div class="app-header__inner">
+    <div class="app-header__menu">
+      <button class="icon-btn" aria-label="Menü öffnen" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+      </button>
+      <div id="menuPanel" style="display:none; position:absolute; top:44px; left:0; z-index:200; background:rgba(0,0,0,0.85); backdrop-filter:saturate(120%) blur(12px); padding:8px 10px; box-shadow:rgba(0,0,0,0.35) 0 8px 30px; max-width:400px; width:250px;">
+        <div id="menuKeywords" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow:auto;"><a style="color:white;text-decoration: none;" href="https://style-ai.app/">Back to Home Feed</a></div>
+      </div>
+    </div>
+    <a href="https://style-ai.app/" class="app-header__logo" aria-label="STYLE AI">STYLE AI</a>
+    <div class="app-header__avatar"><span class="app-header__avatar-img" aria-hidden="true"></span></div>
+  </div>
+  <div class="filter-bar"><div class="filter-bar__inner"><div id="activeFilter" style="display:none;"></div></div></div>
+</header>
+<!-- per CDN -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- plus Sanitizer (wichtig gegen XSS!) -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <div class="container">
+    <div class="content" style="padding: 0px;">
+      <div id="gallery"></div>
+    </div>
+  </div>
+  <!-- Modal für Karl-Antwort -->
+    <div id="karlModal" class="karl-modal hidden">
+      <div class="karl-modal-content">
+        <div class="karl-modal-header">
+          <span><center>Ella's Ideas for Your Outfit</center></span>
+          <button class="karl-close" onclick="closeKarlModal()">×</button>
+        </div>
+        <div class="karl-modal-body-wrapper">
+          <div id="karlModalImageContainer">
+            <!-- Bild wird dynamisch eingefügt -->
+          </div>
+          <div class="karl-modal-body" id="karlModalBody">
+            Ella is looking at your outfit, please wait a moment …
+          </div>
+        </div>
+      </div>
+    </div>
+<!-- Modal für Video -->
+<div id="videoModal" class="karl-modal hidden">
+  <div class="karl-modal-content">
+    <div class="karl-modal-header">
+      <span><center>Your Outfit Video</center></span>
+      <button class="karl-close" onclick="closeVideoModal()">×</button>
+    </div>
+
+    <div class="karl-modal-body-wrapper">
+      <div id="videoModalMediaContainer"></div>
+      <div class="karl-modal-body" id="videoModalBody">
+        We're creating your video … please wait a moment …
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const header = document.querySelector('.app-header');
+    if(!header) return;
+    const btn = header.querySelector('.icon-btn');
+    const panel = header.querySelector('#menuPanel');
+    const active = document.getElementById('activeFilter');
+    const isOpen = () => panel && panel.style.display !== 'none';
+    const open = () => { if(panel) panel.style.display = 'block'; if(btn) btn.setAttribute('aria-expanded','true'); };
+    const close = () => { if(panel) panel.style.display = 'none'; if(btn) btn.setAttribute('aria-expanded','false'); };
+
+    btn && btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isOpen() ? close() : open();
+    });
+    document.addEventListener('click', (e) => {
+      if(header && panel && isOpen() && !header.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape') close(); });
+    panel && panel.addEventListener('click', (e) => {
+      const target = e.target.closest('.menu-btn');
+      if(!target) return;
+      const term = target.dataset.term || (target.textContent || '').trim();
+      if(active){ active.textContent = term; active.style.display = 'block'; }
+      close();
+    });
+  })();
+  </script>
+
+<script id="predictionsJson" type="application/json">{{ prediction_ids|tojson }}</script>
+<script>
+  /* ------------------------------------------------------------------------
+   *  Prediction-IDs aus Jinja-Template holen und Galerie aufbauen
+   * --------------------------------------------------------------------- */
+  const ids     = JSON.parse(document.getElementById('predictionsJson')?.textContent || '[]');
+  const gallery = document.getElementById('gallery');
+
+  if (!ids || ids.length === 0) {
+    gallery.innerHTML =
+      '<div style="text-align:center;color:#ff3b30;padding:2rem;">' +
+      'No prediction IDs received' +
+      '</div>';
+  } else {
+    // Nur ein Outfit-Bild - verwende das erste (und einzige) Element
+    const id = ids[0];
+    const container = document.createElement('div');
+    container.className = 'result-item';
+    container.innerHTML = `
+      <div class="result-image-container">
+        <div id="wait-screen" class="wait-screen">
+          <div class="wait-text">
+            <div style="padding:5px;font-weight:600; font-size: 20px;">Your outfit is being created<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
+            <div style="opacity:.9; font-size: 14px;">Please be patient and take a look at the outfits that have already been designed.</div>
+          </div>
+          <video id="waitVideoPlayer" class="wait-video-player" autoplay muted loop playsinline>
+            Your browser does not support the video tag.
+          </video>
+          
+          <div class="wait-indicators" id="waitIndicators">
+            <!-- Indicator dots werden hier eingefügt -->
+          </div>
+          
+          <div class="wait-loading" id="waitLoading">Loading...</div>
+          
+          <div class="wait-controls">
+            <button class="wait-skip-btn" id="waitSkipBtn">
+              <span>Weiter</span>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
+          
+        </div>
+      </div>
+    `;
+    gallery.appendChild(container);
+
+    /* Polling auf Back-End /status/<id> */
+    let pollCount = 0;
+    const maxPolls = 60;          // ~ 3 Minuten
+    // Header ausblenden während Wait-Screen
+    document.body.classList.add('hide-header');
+
+    const poll = setInterval(() => {
+      pollCount++;
+      fetch(`/status/${id}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (data.status === 'succeeded') {
+            clearInterval(poll);
+
+            /* Status-Anzeige aktualisieren - Element existiert nicht, überspringen */
+            // const statusIndicator = container.querySelector('.status-indicator');
+            // statusIndicator.innerHTML = `
+            //   <div class="status-dot success"></div>
+            //   <span>Fertig</span>
+            // `;
+
+            /* Skip-Button für Result umfunktionieren */
+            const ws = document.getElementById('wait-screen');
+            if (ws) {
+              // Text-Box verstecken wenn Outfit fertig
+              const waitText = ws.querySelector('.wait-text');
+              if (waitText) {
+                waitText.style.display = 'none';
+              }
+              
+              const skipBtn = ws.querySelector('#waitSkipBtn');
+              if (skipBtn) {
+                // Button-Text und Style ändern (behält ursprünglichen weißen Style)
+                skipBtn.classList.add('ready');
+                skipBtn.innerHTML = `
+                  <span>Your Outfit is ready</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-arrow-right"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="m12 16 4-4-4-4"/></svg>
+                `;
+                
+                // Event-Listener austauschen - alle alten entfernen
+                const newSkipBtn = skipBtn.cloneNode(true);
+                skipBtn.parentNode.replaceChild(newSkipBtn, skipBtn);
+                
+                // Neuen Event-Listener für Result-Anzeige
+                newSkipBtn.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  ws.classList.add('fade-out');
+                  setTimeout(() => {
+                    // Header wieder einblenden
+                    document.body.classList.remove('hide-header');
+                    // Result-Header einblenden
+                    const resultHeader = document.getElementById('result-header');
+                    if (resultHeader) {
+                      resultHeader.style.display = 'block';
+                    }
+                    
+                    container.innerHTML = `
+                      <div class="result-image-container">
+                        <img src="${data.local_url || data.output}" alt="Dein Outfit" class="result-image" />
+                      </div>
+                      <div class="result-actions">
+                        <button class="result-btn" onclick="askKarl('${data.output}')">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-more"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg> Ask Ella
+                        </button>
+                        <button class="result-btn secondary" onclick="createVideo('${data.output}')">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clapperboard"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg> Create Video
+                        </button>
+                        <a href="${data.local_url || data.output}" download="mein-outfit.jpg" class="result-btn secondary" style="text-decoration: none;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Download Image
+                        </a>
+                        <a href="/" class="result-btn secondary" style="text-decoration: none;">
+                          Create a New Look
+                        </a>
+                      </div>
+                    `;
+                  }, 400);
+                });
+              }
+            } else {
+              // Fallback - zeige Ergebnis direkt (falls wait-screen nicht gefunden)
+              document.body.classList.remove('hide-header');
+              const resultHeader = document.getElementById('result-header');
+              if (resultHeader) {
+                resultHeader.style.display = 'block';
+              }
+              
+              container.innerHTML = `
+                <div class="result-image-container">
+                  <img src="${data.local_url || data.output}" alt="Dein Outfit" class="result-image" />
+                </div>
+                <div class="result-actions">
+                  <button class="result-btn" onclick="askKarl('${data.output}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-more"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg> Ask Ella
+                  </button>
+                  <button class="result-btn secondary" onclick="createVideo('${data.output}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clapperboard"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg> Create Video
+                  </button>
+                  <a href="${data.local_url || data.output}" download="mein-outfit.jpg" class="result-btn secondary" style="text-decoration: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Download Image
+                  </a>
+                </div>
+              `;
+            }
+
+
+          } else if (data.status === 'failed') {
+            clearInterval(poll);
+            document.body.classList.remove('hide-header');
+            container.innerHTML = `
+              <div class="result-image-container">
+                <div style="padding: 40px; text-align: center; color: var(--muted);">
+                  <div style="font-size: 48px; margin-bottom: 16px;">😞</div>
+                  <div style="font-size: 16px; margin-bottom: 8px;">Generation failed</div>
+                  <div style="font-size: 13px; margin-bottom: 20px;">Please try again</div>
+                  <button class="result-btn" onclick="location.reload()">
+                    ↻ Try again
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+          /* processing / starting → bleibt im Loading-State */
+        })
+        .catch(err => {
+          console.error(`Polling-Fehler für ${id}:`, err);
+          if (pollCount > 5) {
+            const loadingSub = container.querySelector('.loading-subtext');
+            if (loadingSub) loadingSub.textContent = 'Fehler beim Laden.';
+          }
+        });
+    }, 3000);
+  }
+
+  /* ------------------------------------------------------------------------
+   *  Modal-Funktionen (Spinner + Antwort anzeigen)
+   * --------------------------------------------------------------------- */
+  function showKarlModal(imageUrl = null, message /* optional */) {
+    const modal          = document.getElementById('karlModal');
+    const body           = document.getElementById('karlModalBody');
+    const imageContainer = document.getElementById('karlModalImageContainer');
+
+    /* Bild aktualisieren */
+    if (imageUrl) {
+      imageContainer.innerHTML = `
+        <div style="width:100%;max-width:300px;overflow:hidden;border-radius:12px;
+                    display:flex;justify-content:center;margin-bottom:20px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+          <img src="${imageUrl}" alt="Outfit Bild"
+               style="width:100%;height:auto;object-fit:contain;display:block;"/>
+        </div>
+      `;
+    } else {
+      imageContainer.innerHTML = '';
+    }
+
+    /* Wenn keine message → Spinner, sonst stylische Antwort mit Tipp-Animation */
+    if (message === undefined) {
+      body.innerHTML = `
+        <div class="karl-loading">
+          <div class="karl-loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="karl-loading-text">Analyzing your style...</div>
+        </div>`;
+    } else {
+      // Stylisches Design ohne Emojis + Tipp-Animation
+      body.innerHTML = '<div id="karlTypingContainer"></div>';
+      startTypingAnimation(message);
+    }
+
+    // Body-Scroll verhindern
+    document.body.style.overflow = 'hidden';
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  // Tipp-Animation für Karl's Feedback
+  function startTypingAnimation(message) {
+    const container = document.getElementById('karlTypingContainer');
+    if (!container) return;
+
+    // Stylisches Design ohne Emojis erstellen
+    const styledMessage = formatKarlMessage(message);
+    
+    container.innerHTML = `
+      <div class="karl-feedback">
+        <div class="karl-feedback-header">
+          <div class="karl-avatar">K</div>
+          <div class="karl-info">
+            <div class="karl-name">Ella</div>
+            <div class="karl-title">Style Consultant</div>
+          </div>
+        </div>
+        <div class="karl-message" id="karlMessageContent"></div>
+        <div class="karl-typing-indicator" id="karlTypingIndicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `;
+
+    // Tipp-Animation starten
+    const messageElement = document.getElementById('karlMessageContent');
+    const typingIndicator = document.getElementById('karlTypingIndicator');
+    
+    let currentIndex = 0;
+    const typingSpeed = 15; // Millisekunden pro Zeichen
+    
+    function typeNextChar() {
+      if (currentIndex < styledMessage.length) {
+        messageElement.innerHTML = styledMessage.substring(0, currentIndex + 1);
+        currentIndex++;
+        setTimeout(typeNextChar, typingSpeed);
+      } else {
+        // Animation beendet - Typing-Indicator verstecken
+        typingIndicator.style.display = 'none';
+      }
+    }
+    
+    // Kurze Pause vor Start der Animation
+    setTimeout(() => {
+      typeNextChar();
+    }, 500);
+  }
+
+  // Nachricht stylisch formatieren (ohne Emojis)
+  function formatKarlMessage(message) {
+    // Entferne Emojis und formatiere stylisch
+    let formatted = message
+      .replace(/👗\s*Outfit Analysis/gi, '<h2>Style Analysis</h2>')
+      .replace(/✅\s*What I like:/gi, '<h3>What Works</h3>')
+      .replace(/💡\s*Improvement suggestions:/gi, '<h3>Refinements</h3>')
+      .replace(/🎨\s*Styling Tip of the Day:/gi, '<h3>Pro Tip</h3>')
+      .replace(/[👗✅💡🎨🌟💄👠👜🔥]/g, '') // Entferne alle Fashion-Emojis
+      .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, ''); // Entferne alle Unicode-Emojis
+
+    // Markdown zu HTML mit stylischen Klassen
+    formatted = formatted
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    return `<div class="karl-content"><p>${formatted}</p></div>`;
+  }
+
+  function closeKarlModal() {
+    const modal = document.getElementById('karlModal');
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+    // Body-Scroll wieder aktivieren
+    document.body.style.overflow = '';
+  }
+
+  // Modal schließen wenn außerhalb geklickt wird
+  document.getElementById('karlModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeKarlModal();
+    }
+  });
+
+  function showVideoModal(imageUrl = null, message /* optional */) {
+    const modal          = document.getElementById('videoModal');
+    const body           = document.getElementById('videoModalBody');
+    const mediaContainer = document.getElementById('videoModalMediaContainer');
+
+    // Optional: Ausgangsbild anzeigen, solange das Video rendert
+    if (imageUrl) {
+      mediaContainer.innerHTML = `
+        <div style="width:100%;max-width:300px;overflow:hidden;border-radius:8px;display:flex;justify-content:center;margin-bottom:10px;">
+          <img src="${imageUrl}" alt="Outfit Bild" style="width:100%;height:auto;object-fit:contain;display:block;"/>
+        </div>
+      `;
+    } else if (!mediaContainer.innerHTML.includes('<video')) {
+      // Nur löschen wenn kein Video vorhanden ist
+      mediaContainer.innerHTML = '';
+    }
+
+    // Wenn keine message → eigener Spinner-Text für Video
+    if (message === undefined) {
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div class="spinner"></div>
+          <div style="font-size:15px;line-height:1.3;text-align:center;">Video is being created …</div>
+        </div>`;
+    } else {
+      const parsed = DOMPurify.sanitize(marked.parse(message));
+      body.innerHTML = parsed;
+    }
+
+    document.body.style.overflow = 'hidden';
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  function closeVideoModal() {
+    const modal = document.getElementById('videoModal');
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Outside-Click zum Schließen
+  document.getElementById('videoModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeVideoModal();
+    }
+  });
+
+  /* ------------------------------------------------------------------------
+   *  Anfrage an Back-End senden
+   * --------------------------------------------------------------------- */
+  async function askKarl(imageUrl) {
+    showKarlModal(imageUrl);            // Bild & Spinner anzeigen
+
+    const payload = {
+      message: 'Sieh dir das Outfit im Bild an und gib eine stilistische ' +
+               'Einschätzung: Was passt, was könnte verbessert werden?' +
+               'Gib deine Antwort bitte in Markdown-Formatierung zurück:Überschriften, Aufzählungen, Fettdruck',
+      image_url: imageUrl,
+      type: 'style_advice',
+      save_history: false
+    };
+
+    let res;
+    try {
+      res = await fetch('/api/chat', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(payload),
+      });
+    } catch (netErr) {
+      console.warn('Fetch-Fehler:', netErr);
+      showKarlModal(imageUrl, 'Karl-Endpoint konnte nicht erreicht werden.');
+      return;
+    }
+
+    let data;
+    try {
+      data = await res.json();          // Body genau EINMAL lesen
+    } catch {
+      const raw = await res.text();
+      console.warn('Keine JSON-Antwort:', raw);
+      showKarlModal(imageUrl, 'Fehler beim Parsen der Antwort:\n' + raw.slice(0, 800));
+      return;
+    }
+
+    if (res.ok && data.response) {
+      showKarlModal(imageUrl, data.response);     // Spinner ausblenden, Text zeigen
+    } else {
+      const errMsg = data.error || 'Unbekannter Fehler';
+      showKarlModal(imageUrl, 'Ella cannot answer:\n' + errMsg);
+    }
+  }
+
+    async function createVideo(imageUrl) {
+    // Modal mit Spinner + Vorschaubild öffnen (gleicher Flow wie bei Karl)
+    showVideoModal(imageUrl);  // zeigt Bild + "Karl denkt …"
+
+    const payload = {
+      image_url: imageUrl,
+      // Dein gewünschter Default-Prompt (du wolltest erstmal fixen Prompt)
+        prompt: "Full-body fashion video of the model walking confidently on a runway, smooth dolly tracking shot, professional fashion show lighting, high quality, cinematic"
+
+    };
+
+    let startRes;
+    try {
+      startRes = await fetch('/video/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      showKarlModal(imageUrl, "Video-Endpoint nicht erreichbar.");
+      return;
+    }
+
+    const startData = await startRes.json();
+    if (!startRes.ok || !startData.prediction_id) {
+      showKarlModal(imageUrl, "Konnte Video nicht starten: " + (startData.error || "Unbekannter Fehler"));
+      return;
+    }
+
+    const predId = startData.prediction_id;
+
+    // Polling → analog zu eurem Bild-Polling
+    let pollCount = 0;
+    const maxPolls = 120; // ~6 Minuten bei 3s Intervall
+    const interval = setInterval(async () => {
+      pollCount++;
+      try {
+        const r = await fetch(`/video/status/${predId}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const s = await r.json();
+
+        if (s.status === 'succeeded' && s.output) {
+          clearInterval(interval);
+
+          // output ist entweder String (mp4-URL) oder Liste mit einer URL
+          const videoUrl = Array.isArray(s.output) ? s.output[0] : s.output;
+
+          console.log('Video fertig:', videoUrl);
+
+          // Zuerst die Nachricht setzen
+          showVideoModal(null, `**Your Fashion Video is ready!**\n\n[⬇ Download Video](${videoUrl})`);
+
+          // Dann das Video in den MediaContainer einfügen (nach dem showVideoModal)
+          setTimeout(() => {
+            const mediaContainer = document.getElementById('videoModalMediaContainer');
+            if (mediaContainer) {
+              mediaContainer.innerHTML = `
+                <div style="width:100%;max-width:400px;margin:0 auto;">
+                  <video 
+                    src="${videoUrl}" 
+                    controls 
+                    playsinline 
+                    autoplay 
+                    muted
+                    loop
+                    style="width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);"
+                    onloadstart="console.log('Video lädt:', this.src)"
+                    oncanplay="console.log('Video bereit zum Abspielen')"
+                    onerror="console.error('Video-Fehler:', this.error)">
+                    <source src="${videoUrl}" type="video/mp4">
+                    Ihr Browser unterstützt das Video-Element nicht.
+                  </video>
+                </div>
+              `;
+              console.log('Video-Player eingefügt');
+            } else {
+              console.error('videoModalMediaContainer nicht gefunden');
+            }
+          }, 100);
+        } else if (s.status === 'failed') {
+          clearInterval(interval);
+          showKarlModal(imageUrl, "Videoerstellung fehlgeschlagen." + (s.error ? `\n\n${s.error}` : ""));
+        } else if (pollCount >= maxPolls) {
+          clearInterval(interval);
+          showKarlModal(imageUrl, "Timeout beim Erstellen des Videos – bitte später erneut versuchen.");
+        }
+      } catch (err) {
+        if (pollCount > 5) {
+          showKarlModal(imageUrl, "Fehler beim Polling der Video-Prediction.");
+        }
+      }
+    }, 3000);
+  }
+
+  console.log('Result-Page-Script geladen');
+</script>
+
+<script>
+  // Inline-Styles für den Wait-Screen (mobilfreundlich 9:16)
+  (function(){
+    const style = document.createElement('style');
+    style.textContent = `
+      .wait-screen { 
+        position: relative; 
+        background: #0f0f10; 
+        overflow: hidden; 
+        width: 100%;
+        max-width: 450px;
+        aspect-ratio: 9/16;
+        margin: 0 auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      }
+      
+      .wait-text { 
+        position: absolute;
+        color: #eaeaea; 
+        text-align: center;
+        z-index: 10;
+        background: rgba(0,0,0,0.5);
+        padding: 12px 20px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        margin: 20px;
+        margin-bottom: 200px;
+      }
+      
+      .wait-video-player {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        height: 100%;
+        width: auto;
+        min-width: 100%;
+        object-fit: cover;
+      }
+      
+      .wait-controls {
+        position: absolute;
+        bottom: 60px;
+        left: 40%;
+        transform: translateX(-33%);
+        z-index: 10;
+      }
+      
+      .wait-skip-btn {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: none;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .wait-skip-btn.ready {
+        display: flex;
+      }
+      
+      .wait-skip-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+      }
+      
+      .wait-skip-btn:active {
+        transform: scale(0.95);
+      }
+      
+      .wait-skip-btn svg {
+        width: 20px;
+        height: 20px;
+      }
+      
+      .wait-indicators {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 10;
+      }
+      
+      .wait-indicator-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+      }
+      
+      .wait-indicator-dot.active {
+        background: white;
+        width: 24px;
+        border-radius: 4px;
+      }
+      
+      .wait-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 10;
+      }
+      
+      .wait-loading.show {
+        opacity: 1;
+      }
+      
+      .wait-hint {
+        position: absolute;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255,255,255,0.6);
+        font-size: 12px;
+        text-align: center;
+        z-index: 10;
+      }
+      
+      .fade-out { animation: fadeOut .35s ease forwards; }
+      @keyframes fadeOut { to { opacity: 0; transform: translateY(4px); } }
+      
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+      
+      .pulse {
+        animation: pulse 0.5s ease;
+      }
+      
+      .loading-dots span {
+        opacity: 0;
+        animation: loadingDots 1.5s infinite;
+      }
+      
+      .loading-dots span:nth-child(1) {
+        animation-delay: 0s;
+      }
+      
+      .loading-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      
+      .loading-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      
+      @keyframes loadingDots {
+        0% { opacity: 0; }
+        20% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      
+      @media (max-width: 768px) {
+        .wait-screen {
+          max-width: 100%;
+
+          height: 80vh;
+          aspect-ratio: unset;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Robustes Video-Karussell mit garantierter Wiedergabe
+    async function initWaitCarousel(){
+      try {
+        const r = await fetch('/videos/recent?limit=8');
+        const d = await r.json();
+        // Neue Implementierung - kein track mehr, sondern einzelner Video-Player
+        const videoPlayer = document.getElementById('waitVideoPlayer');
+        const skipBtn = document.getElementById('waitSkipBtn');
+        const loading = document.getElementById('waitLoading');
+        const indicatorsContainer = document.getElementById('waitIndicators');
+        
+        if (!videoPlayer || !skipBtn || !loading || !indicatorsContainer) {
+          console.error('❌ Player-Elemente nicht gefunden');
+          return;
+        }
+        const videos = (d && Array.isArray(d.videos)) ? d.videos : [];
+        console.log(`📹 Gefundene Videos: ${videos.length}`, videos);
+
+        if (!videos.length) {
+          loading.textContent = 'No videos available yet';
+          loading.classList.add('show');
+          return;
+        }
+
+        let currentVideoIndex = 0;
+
+        // Indicator-Dots erstellen
+        function createIndicators() {
+          indicatorsContainer.innerHTML = '';
+          videos.forEach((_, index) => {
+            const dot = document.createElement('span');
+            dot.className = 'wait-indicator-dot';
+            if (index === 0) dot.classList.add('active');
+            indicatorsContainer.appendChild(dot);
+          });
+        }
+        
+        // Indicators aktualisieren
+        function updateIndicators() {
+          const indicators = indicatorsContainer.querySelectorAll('.wait-indicator-dot');
+          indicators.forEach((dot, index) => {
+            if (index === currentVideoIndex) {
+              dot.classList.add('active');
+            } else {
+              dot.classList.remove('active');
+            }
+          });
+        }
+        
+        // Video laden
+        function loadVideo(index) {
+          console.log(`🎯 Lade Video ${index + 1}/${videos.length}: ${videos[index]}`);
+          
+          loading.classList.add('show');
+          videoPlayer.src = videos[index];
+          videoPlayer.load();
+          
+          videoPlayer.oncanplaythrough = () => {
+            console.log(`✅ Video ${index + 1} bereit zum Abspielen`);
+            loading.classList.remove('show');
+            videoPlayer.play().catch(e => {
+              console.log('Autoplay blockiert, versuche stumme Wiedergabe:', e);
+              videoPlayer.muted = true;
+              videoPlayer.play().catch(console.error);
+            });
+          };
+          
+          updateIndicators();
+          
+          // Button-Text aktualisieren
+          const btnText = skipBtn.querySelector('span');
+          if (btnText) {
+            if (index === videos.length - 1) {
+              btnText.textContent = 'Von vorne';
+            } else {
+              btnText.textContent = 'Weiter';
+            }
+          }
+        }
+        
+        // Skip-Button Event
+        skipBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+          loadVideo(currentVideoIndex);
+          
+          // Pulse-Effekt
+          skipBtn.classList.add('pulse');
+          setTimeout(() => {
+            skipBtn.classList.remove('pulse');
+          }, 500);
+          
+          console.log(`🎬 Weiter zu Video ${currentVideoIndex + 1}/${videos.length}`);
+        });
+        
+        // Video-Click für Skip (Alternative zum Button)
+        videoPlayer.addEventListener('click', (e) => {
+          e.preventDefault();
+          skipBtn.click();
+        });
+        
+        // Wisch-Gesten für Video-Navigation hinzufügen
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        
+        videoPlayer.addEventListener('touchstart', (e) => {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          touchStartTime = Date.now();
+        }, { passive: true });
+        
+        videoPlayer.addEventListener('touchend', (e) => {
+          const touchEndX = e.changedTouches[0].clientX;
+          const touchEndY = e.changedTouches[0].clientY;
+          const touchDiffX = touchStartX - touchEndX;
+          const touchDiffY = Math.abs(touchStartY - touchEndY);
+          const touchTime = Date.now() - touchStartTime;
+          
+          // Horizontaler Swipe erkennen (mindestens 50px horizontal, max 100px vertikal, unter 500ms)
+          if (Math.abs(touchDiffX) > 50 && touchDiffY < 100 && touchTime < 500) {
+            e.preventDefault();
+            
+            if (touchDiffX > 0) {
+              // Swipe left = nächstes Video (nutzt bestehenden Skip-Button)
+              skipBtn.click();
+              console.log('🎬 Swipe left - nächstes Video');
+            } else {
+              // Swipe right = vorheriges Video
+              currentVideoIndex = (currentVideoIndex - 1 + videos.length) % videos.length;
+              loadVideo(currentVideoIndex);
+              console.log('🎬 Swipe right - vorheriges Video');
+            }
+          }
+        }, { passive: false });
+        
+        // Error-Handling
+        videoPlayer.onerror = (e) => {
+          console.error(`❌ Video-Fehler bei Index ${currentVideoIndex}:`, e);
+          loading.textContent = 'Fehler beim Laden des Videos';
+          loading.classList.add('show');
+          
+          // Versuche nächstes Video nach 2 Sekunden
+          setTimeout(() => {
+            if (currentVideoIndex < videos.length - 1) {
+              currentVideoIndex++;
+              loadVideo(currentVideoIndex);
+            }
+          }, 2000);
+        };
+        
+        // Mobile-Touch-Optimierung
+        document.addEventListener('click', () => {
+          if (videoPlayer.paused) {
+            videoPlayer.play().catch(console.error);
+          }
+        }, { once: true });
+        
+        // Keyboard-Navigation
+        document.addEventListener('keydown', (e) => {
+          if (document.getElementById('wait-screen')) {
+            if (e.key === ' ' || e.key === 'ArrowRight') {
+              e.preventDefault();
+              skipBtn.click();
+            }
+          }
+        });
+
+        // Initialisierung
+        createIndicators();
+        loadVideo(0);
+        
+        // Debug-Export
+        window.videoCarousel = {
+          loadVideo,
+          getCurrentIndex: () => currentVideoIndex,
+          getVideos: () => videos,
+          skipToNext: () => skipBtn.click()
+        };
+      } catch(e){ console.warn('initWaitCarousel failed', e); }
+    }
+    initWaitCarousel();
+  })();
+</script>
+
+</body>
+</html>
